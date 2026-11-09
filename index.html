@@ -221,6 +221,11 @@
   </main>
 
   <script type="module">
+    const firebaseConfig = {
+      databaseURL: "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+
+    const DATABASE_PATH = "zlatar_station";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
