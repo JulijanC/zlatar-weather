@@ -221,16 +221,38 @@
   </main>
 
   <script type="module">
+    // 1) U Firebase konzoli otvori Project settings > Your apps > Web app
+    //    i kopiraj konfiguraciju u firebaseConfig ispod.
+    // 2) Ovaj primjer koristi Firebase Realtime Database (ne Firestore).
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    // Povezano direktno na tvoj projekt
     const firebaseConfig = {
-      databaseURL: "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app"
+      apiKey: "OVDJE_UNESI_API_KEY",
+      authDomain: "OVDJE_UNESI_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://OVDJE_UNESI_PROJECT_ID-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "OVDJE_UNESI_PROJECT_ID",
+      storageBucket: "OVDJE_UNESI_PROJECT_ID.appspot.com",
+      messagingSenderId: "OVDJE_UNESI_SENDER_ID",
+      appId: "OVDJE_UNESI_APP_ID"
     };
 
-    // Glavna putanja odgovara onome što šalje tvoj uređaj
-    const DATABASE_PATH = "zlatar_station";
+    // Očekivana struktura u Realtime Database:
+    // /weather/outside/temperature = 12.8
+    // /weather/outside/humidity = 78
+    // /weather/outside/pressure = 1009
+    // /weather/living/temperature = 22.6
+    // /weather/living/humidity = 46
+    // /weather/room1/temperature = 21.9
+    // /weather/room1/humidity = 49
+    // /weather/room2/temperature = 22.1
+    // /weather/room2/humidity = 44
+    //
+    // Prognozu možeš spremati pod /weather/forecast/today, /tomorrow i /dayAfter.
+    // Primjer: { "max": 15.1, "min": 6.3, "description": "Djelomično oblačno",
+    //            "rain": 10, "wind": 12, "icon": "🌤️" }
+
+    const DATABASE_PATH = "weather"; // Promijeni ako koristiš drugu putanju u bazi.
 
     const $ = (id) => document.getElementById(id);
     const show = (id, value, suffix = "") => {
@@ -244,15 +266,15 @@
       show(prefix + "Humidity", data.humidity, "");
       const bar = $(prefix + "Bar");
       const humidity = Number(data.humidity);
-      if (bar) {
-        bar.style.width = Number.isFinite(humidity) ? `${Math.max(0, Math.min(100, humidity))}%` : "0%";
-      }
+      bar.style.width = Number.isFinite(humidity) ? `${Math.max(0, Math.min(100, humidity))}%` : "0%";
       if (statusId) show(statusId, data.status || "--");
     }
 
     function updateForecast(key, data) {
       data = data || {};
-      const ids = { today: "today", tomorrow: "tomorrow", dayAfter: "dayAfter" };
+      const ids = {
+        today: "today", tomorrow: "tomorrow", dayAfter: "dayAfter"
+      };
       const p = ids[key];
       if (!p) return;
       show(p + "Max", data.max, " °C");
@@ -265,23 +287,14 @@
 
     function updateDashboard(data) {
       data = data || {};
-      
-      // Podržava i direktno slanje (npr. data.temperature) ili struktuirano preko "outside"
-      if (data.temperature !== undefined) {
-        show("outsideTemp", Number(data.temperature).toFixed(1), "");
-      } else {
-        updateSensor(data.outside, "outside");
-      }
-      
-      show("pressure", data.pressure || data.outside?.pressure, " hPa");
+      updateSensor(data.outside, "outside");
+      show("pressure", data.outside?.pressure, " hPa");
       updateSensor(data.living, "living", "livingStatus");
       updateSensor(data.room1, "room1", "room1Status");
       updateSensor(data.room2, "room2", "room2Status");
-      
       updateForecast("today", data.forecast?.today);
       updateForecast("tomorrow", data.forecast?.tomorrow);
       updateForecast("dayAfter", data.forecast?.dayAfter);
-      
       $("lastUpdate").textContent = "Zadnje ažuriranje: " + new Date().toLocaleTimeString("hr-HR");
     }
 
@@ -297,25 +310,31 @@
     setInterval(updateClock, 1000);
 
     const tag = $("connectionTag");
+    const configIsFilled = !firebaseConfig.apiKey.startsWith("OVDJE_") &&
+                           !firebaseConfig.projectId.startsWith("OVDJE_") &&
+                           !firebaseConfig.databaseURL.includes("OVDJE_");
 
-    try {
-      const app = initializeApp(firebaseConfig);
-      const database = getDatabase(app);
-      tag.textContent = "● POVEZIVANJE...";
-      
-      onValue(ref(database, DATABASE_PATH), (snapshot) => {
-        updateDashboard(snapshot.val());
-        tag.textContent = "● FIREBASE POVEZAN";
-        tag.classList.add("online");
-      }, (error) => {
-        tag.textContent = "● GREŠKA POVEZIVANJA";
-        console.error("Firebase read error:", error);
-      });
-    } catch (error) {
-      tag.textContent = "● FIREBASE GREŠKA";
-      console.error(error);
+    if (!configIsFilled) {
+      tag.textContent = "● UNESI FIREBASE KONFIGURACIJU";
+      console.info("Firebase konfiguracija još nije unesena. Sučelje je spremno.");
+    } else {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        tag.textContent = "● POVEZIVANJE...";
+        onValue(ref(database, DATABASE_PATH), (snapshot) => {
+          updateDashboard(snapshot.val());
+          tag.textContent = "● FIREBASE POVEZAN";
+          tag.classList.add("online");
+        }, (error) => {
+          tag.textContent = "● GREŠKA POVEZIVANJA";
+          console.error("Firebase read error:", error);
+        });
+      } catch (error) {
+        tag.textContent = "● FIREBASE GREŠKA";
+        console.error(error);
+      }
     }
   </script>
 </body>
 </html>
-```[cite: 11]
