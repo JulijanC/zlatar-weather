@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101d2b">
+  <title>Weather Station Home</title>
+  <style>
+    :root {
+      --bg: #101923;
+      --panel: #172735;
+      --panel-2: #1d3443;
+      --line: #28c8c1;
+      --text: #eef5f8;
+      --muted: #a8bac5;
+      --good: #5ed3b2;
+      --card: #e9eef0;
+      --card-text: #20313d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: clamp(12px, 3vw, 34px);
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 15% 0%, #294858 0, transparent 42%),
+        linear-gradient(135deg, #0d1721, #172633 55%, #0c1721);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .dashboard { width: min(1120px, 100%); margin: 0 auto; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; padding: 8px 4px 18px;
+      border-bottom: 2px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 15px; min-width: 0; }
+    .home-icon { font-size: 35px; flex: 0 0 auto; }
+    h1 { margin: 0 0 5px; font-size: clamp(22px, 3vw, 30px); }
+    .subtitle { color: var(--muted); font-size: 12px; letter-spacing: .5px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    .tag {
+      border: 1px solid #527080; border-radius: 5px; padding: 3px 7px;
+      color: #c5d5dc; font-size: 10px; letter-spacing: .4px;
+    }
+    .tag.online { color: var(--good); border-color: #3e9e8d; }
+    .clock { text-align: right; flex: 0 0 auto; }
+    .date { color: #c5d2d9; font-size: 15px; text-transform: lowercase; }
+    .time { font-size: clamp(28px, 5vw, 48px); font-weight: 700; letter-spacing: 1px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .sensor { min-width: 0; border: 1px solid #416475; border-radius: 9px; overflow: hidden; background: #142532; }
+    .sensor-title {
+      display: flex; align-items: center; gap: 10px; padding: 8px 13px;
+      font-weight: 700; font-size: 19px; border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #1d3545, #142532);
+    }
+    .sensor-title .icon { font-size: 20px; }
+    .sensor-body {
+      min-height: 104px; padding: 10px 15px 8px; color: var(--card-text);
+      background: linear-gradient(110deg, #edf1f2, #dce5e8);
+      display: grid; grid-template-columns: 1.1fr .9fr; align-items: center;
+    }
+    .temperature { display: flex; align-items: flex-start; gap: 8px; font-size: clamp(35px, 5vw, 55px); font-weight: 700; line-height: 1; }
+    .thermo { font-size: 22px; margin-top: 8px; color: #81949d; }
+    .unit { font-size: 20px; font-weight: 400; margin: 5px 0 0 1px; }
+    .humidity { border-left: 1px solid #c5d0d4; padding-left: 17px; }
+    .humidity-value { font-size: 22px; font-weight: 700; white-space: nowrap; }
+    .drop { color: #77aab5; margin-right: 4px; }
+    .percent { font-size: 12px; font-weight: 400; color: #586c76; }
+    .bar { height: 8px; margin-top: 8px; border-radius: 10px; background: #cbd6d8; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #2bc8c0, #67d2ae); transition: width .3s; }
+    .sensor-foot { padding: 7px 13px; color: #71848d; font-size: 12px; background: #e5ebed; }
+    .sensor-foot strong { color: #4c897d; font-weight: 600; }
+    .forecast-section { margin-top: 17px; border: 1px solid #416475; border-radius: 9px; overflow: hidden; }
+    .section-title { padding: 9px 13px; font-size: 19px; font-weight: 700; background: linear-gradient(90deg, #1d3545, #142532); border-bottom: 1px solid var(--line); }
+    .forecast-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 10px; background: #142532; }
+    .forecast-card { color: var(--card-text); background: #e5ecee; border-radius: 7px; overflow: hidden; min-width: 0; }
+    .forecast-heading { padding: 7px 10px; color: #f2f7f8; background: #496574; font-weight: 700; }
+    .forecast-content { padding: 10px; min-height: 105px; display: flex; gap: 12px; align-items: flex-start; }
+    .weather-icon { font-size: 34px; }
+    .forecast-details { font-size: 12px; line-height: 1.8; }
+    .forecast-details strong { font-size: 14px; }
+    .description { margin-top: 4px; font-size: 11px; color: #526772; }
+    .forecast-foot { display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid #cbd5d8; font-size: 10px; color: #61747d; }
+    .footer { display: flex; justify-content: space-between; gap: 12px; color: #8ea2ad; font-size: 10px; padding: 12px 3px 0; }
+    .muted { color: #82939c; }
+    @media (max-width: 650px) {
+      body { padding: 12px; }
+      .topbar { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .clock { text-align: left; }
+      .grid { grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+      .sensor-body { min-height: 94px; }
+      .forecast-grid { grid-template-columns: 1fr; }
+      .forecast-content { min-height: 80px; }
+      .footer { flex-direction: column; }
+    }
+    @media (max-width: 360px) {
+      .sensor-body { grid-template-columns: 1fr .85fr; padding: 9px; }
+      .temperature { font-size: 34px; }
+      .humidity { padding-left: 10px; }
+      .humidity-value { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="topbar">
+      <div class="brand">
+        <div class="home-icon">⌂</div>
+        <div>
+          <h1>Weather Station Home</h1>
+          <div class="subtitle">ESP32-S3 · INDUSTRIJSKI NADZOR · ZLATAR</div>
+          <div class="tags">
+            <span class="tag" id="connectionTag">● ČEKA SE FIREBASE</span>
+            <span class="tag">4 LOKACIJE</span>
+            <span class="tag">V1.2</span>
+          </div>
+        </div>
+      </div>
+      <div class="clock">
+        <div class="date" id="date">--</div>
+        <div class="time" id="time">--:--:--</div>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Trenutna mjerenja">
+      <article class="sensor">
+        <div class="sensor-title"><span class="icon">♧</span> Vani</div>
+        <div class="sensor-body">
+          <div class="temperature"><span class="thermo">♨</span><span id="outsideTemp">--.-</span><span class="unit">°C</span></div>
+          <div class="humidity">
+            <div class="humidity-value"><span class="drop">♢</span><span id="outsideHumidity">--</span><span class="percent">% RH</span></div>
+            <div class="bar"><div class="bar-fill" id="outsideBar"></div></div>
+          </div>
+        </div>
+        <div class="sensor-foot">Tlak zraka: <strong id="pressure">---- hPa</strong></div>
+      </article>
+
+      <article class="sensor">
+        <div class="sensor-title"><span class="icon">▣</span> Boravak</div>
+        <div class="sensor-body">
+          <div class="temperature"><span class="thermo">♨</span><span id="livingTemp">--.-</span><span class="unit">°C</span></div>
+          <div class="humidity">
+            <div class="humidity-value"><span class="drop">♢</span><span id="livingHumidity">--</span><span class="percent">% RH</span></div>
+            <div class="bar"><div class="bar-fill" id="livingBar"></div></div>
+          </div>
+        </div>
+        <div class="sensor-foot">Status: <strong id="livingStatus">--</strong></div>
+      </article>
+
+      <article class="sensor">
+        <div class="sensor-title"><span class="icon">▤</span> Soba 1</div>
+        <div class="sensor-body">
+          <div class="temperature"><span class="thermo">♨</span><span id="room1Temp">--.-</span><span class="unit">°C</span></div>
+          <div class="humidity">
+            <div class="humidity-value"><span class="drop">♢</span><span id="room1Humidity">--</span><span class="percent">% RH</span></div>
+            <div class="bar"><div class="bar-fill" id="room1Bar"></div></div>
+          </div>
+        </div>
+        <div class="sensor-foot">Status: <strong id="room1Status">--</strong></div>
+      </article>
+
+      <article class="sensor">
+        <div class="sensor-title"><span class="icon">▣</span> Soba 2</div>
+        <div class="sensor-body">
+          <div class="temperature"><span class="thermo">♨</span><span id="room2Temp">--.-</span><span class="unit">°C</span></div>
+          <div class="humidity">
+            <div class="humidity-value"><span class="drop">♢</span><span id="room2Humidity">--</span><span class="percent">% RH</span></div>
+            <div class="bar"><div class="bar-fill" id="room2Bar"></div></div>
+          </div>
+        </div>
+        <div class="sensor-foot">Status: <strong id="room2Status">--</strong></div>
+      </article>
+    </section>
+
+    <section class="forecast-section">
+      <div class="section-title">▦ &nbsp;Prognoza za 3 dana</div>
+      <div class="forecast-grid">
+        <article class="forecast-card">
+          <div class="forecast-heading">Danas</div>
+          <div class="forecast-content">
+            <div class="weather-icon" id="todayIcon">☁</div>
+            <div class="forecast-details">
+              <div>Max: <strong id="todayMax">--.- °C</strong></div>
+              <div>Min: <strong id="todayMin">--.- °C</strong></div>
+              <div class="description" id="todayDescription">Nema podataka</div>
+            </div>
+          </div>
+          <div class="forecast-foot"><span>☂ Kiša: <b id="todayRain">--%</b></span><span>Vjetar: <b id="todayWind">-- km/h</b></span></div>
+        </article>
+        <article class="forecast-card">
+          <div class="forecast-heading">Sutra</div>
+          <div class="forecast-content">
+            <div class="weather-icon" id="tomorrowIcon">☁</div>
+            <div class="forecast-details">
+              <div>Max: <strong id="tomorrowMax">--.- °C</strong></div>
+              <div>Min: <strong id="tomorrowMin">--.- °C</strong></div>
+              <div class="description" id="tomorrowDescription">Nema podataka</div>
+            </div>
+          </div>
+          <div class="forecast-foot"><span>☂ Kiša: <b id="tomorrowRain">--%</b></span><span>Vjetar: <b id="tomorrowWind">-- km/h</b></span></div>
+        </article>
+        <article class="forecast-card">
+          <div class="forecast-heading">Prekosutra</div>
+          <div class="forecast-content">
+            <div class="weather-icon" id="dayAfterIcon">☀</div>
+            <div class="forecast-details">
+              <div>Max: <strong id="dayAfterMax">--.- °C</strong></div>
+              <div>Min: <strong id="dayAfterMin">--.- °C</strong></div>
+              <div class="description" id="dayAfterDescription">Nema podataka</div>
+            </div>
+          </div>
+          <div class="forecast-foot"><span>☂ Kiša: <b id="dayAfterRain">--%</b></span><span>Vjetar: <b id="dayAfterWind">-- km/h</b></span></div>
+        </article>
+      </div>
+    </section>
+    <footer class="footer">
+      <span>Podaci senzora učitavaju se iz Firebase Realtime Database.</span>
+      <span id="lastUpdate">Zadnje ažuriranje: --</span>
+    </footer>
+  </main>
+
+  <script type="module">
+    // 1) U Firebase konzoli otvori Project settings > Your apps > Web app
+    //    i kopiraj konfiguraciju u firebaseConfig ispod.
+    // 2) Ovaj primjer koristi Firebase Realtime Database (ne Firestore).
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "OVDJE_UNESI_API_KEY",
+      authDomain: "OVDJE_UNESI_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://OVDJE_UNESI_PROJECT_ID-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "OVDJE_UNESI_PROJECT_ID",
+      storageBucket: "OVDJE_UNESI_PROJECT_ID.appspot.com",
+      messagingSenderId: "OVDJE_UNESI_SENDER_ID",
+      appId: "OVDJE_UNESI_APP_ID"
+    };
+
+    // Očekivana struktura u Realtime Database:
+    // /weather/outside/temperature = 12.8
+    // /weather/outside/humidity = 78
+    // /weather/outside/pressure = 1009
+    // /weather/living/temperature = 22.6
+    // /weather/living/humidity = 46
+    // /weather/room1/temperature = 21.9
+    // /weather/room1/humidity = 49
+    // /weather/room2/temperature = 22.1
+    // /weather/room2/humidity = 44
+    //
+    // Prognozu možeš spremati pod /weather/forecast/today, /tomorrow i /dayAfter.
+    // Primjer: { "max": 15.1, "min": 6.3, "description": "Djelomično oblačno",
+    //            "rain": 10, "wind": 12, "icon": "🌤️" }
+
+    const DATABASE_PATH = "weather"; // Promijeni ako koristiš drugu putanju u bazi.
+
+    const $ = (id) => document.getElementById(id);
+    const show = (id, value, suffix = "") => {
+      $(id).textContent = value === undefined || value === null || value === ""
+        ? "--" : `${value}${suffix}`;
+    };
+
+    function updateSensor(data, prefix, statusId = null) {
+      data = data || {};
+      show(prefix + "Temp", data.temperature, "");
+      show(prefix + "Humidity", data.humidity, "");
+      const bar = $(prefix + "Bar");
+      const humidity = Number(data.humidity);
+      bar.style.width = Number.isFinite(humidity) ? `${Math.max(0, Math.min(100, humidity))}%` : "0%";
+      if (statusId) show(statusId, data.status || "--");
+    }
+
+    function updateForecast(key, data) {
+      data = data || {};
+      const ids = {
+        today: "today", tomorrow: "tomorrow", dayAfter: "dayAfter"
+      };
+      const p = ids[key];
+      if (!p) return;
+      show(p + "Max", data.max, " °C");
+      show(p + "Min", data.min, " °C");
+      show(p + "Description", data.description || "Nema podataka");
+      show(p + "Rain", data.rain, "%");
+      show(p + "Wind", data.wind, " km/h");
+      show(p + "Icon", data.icon || "☁");
+    }
+
+    function updateDashboard(data) {
+      data = data || {};
+      updateSensor(data.outside, "outside");
+      show("pressure", data.outside?.pressure, " hPa");
+      updateSensor(data.living, "living", "livingStatus");
+      updateSensor(data.room1, "room1", "room1Status");
+      updateSensor(data.room2, "room2", "room2Status");
+      updateForecast("today", data.forecast?.today);
+      updateForecast("tomorrow", data.forecast?.tomorrow);
+      updateForecast("dayAfter", data.forecast?.dayAfter);
+      $("lastUpdate").textContent = "Zadnje ažuriranje: " + new Date().toLocaleTimeString("hr-HR");
+    }
+
+    // Sat i datum na vrhu stranice.
+    function updateClock() {
+      const now = new Date();
+      $("date").textContent = new Intl.DateTimeFormat("hr-HR", {
+        weekday: "short", day: "numeric", month: "long", year: "numeric"
+      }).format(now);
+      $("time").textContent = now.toLocaleTimeString("hr-HR");
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const tag = $("connectionTag");
+    const configIsFilled = !firebaseConfig.apiKey.startsWith("OVDJE_") &&
+                           !firebaseConfig.projectId.startsWith("OVDJE_") &&
+                           !firebaseConfig.databaseURL.includes("OVDJE_");
+
+    if (!configIsFilled) {
+      tag.textContent = "● UNESI FIREBASE KONFIGURACIJU";
+      console.info("Firebase konfiguracija još nije unesena. Sučelje je spremno.");
+    } else {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        tag.textContent = "● POVEZIVANJE...";
+        onValue(ref(database, DATABASE_PATH), (snapshot) => {
+          updateDashboard(snapshot.val());
+          tag.textContent = "● FIREBASE POVEZAN";
+          tag.classList.add("online");
+        }, (error) => {
+          tag.textContent = "● GREŠKA POVEZIVANJA";
+          console.error("Firebase read error:", error);
+        });
+      } catch (error) {
+        tag.textContent = "● FIREBASE GREŠKA";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
