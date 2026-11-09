@@ -57,17 +57,23 @@
   </div>
 
   <script>
-    const FIREBASE_URL = "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app/zlatar_station.json";
+    // Direktni link na temperaturu unutar baze
+    const FIREBASE_URL = "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app/zlatar_station/temperature.json";
 
     async function fetchTemperature() {
       try {
         const response = await fetch(FIREBASE_URL);
         const data = await response.json();
-        if (data && data.temperature !== undefined) {
-          document.getElementById('temp').innerText = `${data.temperature.toFixed(1)} °C`;
+        
+        console.log("Podatak iz Firebasea:", data);
+
+        if (data !== null && data !== undefined) {
+          document.getElementById('temp').innerText = `${Number(data).toFixed(1)} °C`;
+        } else {
+          document.getElementById('temp').innerText = "Nema podataka";
         }
       } catch (err) {
-        console.error("Failed to fetch Firebase data:", err);
+        console.error("Greška kod dohvaćanja:", err);
       }
     }
 
