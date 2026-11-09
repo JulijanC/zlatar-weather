@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zlatar Weather Station</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .location { font-size: 1.1rem; color: #94a3b8; font-weight: 500; }
+    .temp-display {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin: 24px 0;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: #cbd5e1;
+      background: #0f172a;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+    .dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="location">Zlatar, Croatia</div>
+    <div class="temp-display" id="temp">--.- °C</div>
+    <div class="status">
+      <span class="dot"></span> Live Cloud Sync
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_URL = "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app/zlatar_station.json";
+
+    async function fetchTemperature() {
+      try {
+        const response = await fetch(FIREBASE_URL);
+        const data = await response.json();
+        if (data && data.temperature !== undefined) {
+          document.getElementById('temp').innerText = `${data.temperature.toFixed(1)} °C`;
+        }
+      } catch (err) {
+        console.error("Failed to fetch Firebase data:", err);
+      }
+    }
+
+    fetchTemperature();
+    setInterval(fetchTemperature, 10000);
+  </script>
+
+</body>
+</html>
