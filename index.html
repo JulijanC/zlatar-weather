@@ -282,7 +282,6 @@
       $("lastUpdate").textContent = "Zadnje ažuriranje: " + new Date().toLocaleTimeString("hr-HR");
     }
 
-    // Sat i datum na vrhu stranice.
     function updateClock() {
       const now = new Date();
       $("date").textContent = new Intl.DateTimeFormat("hr-HR", {
