@@ -1,85 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101d2b">
   <title>Zlatar Weather Station</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #101923;
+      --panel: #172735;
+      --panel-2: #1d3443;
+      --line: #28c8c1;
+      --text: #eef5f8;
+      --muted: #a8bac5;
+      --good: #5ed3b2;
+      --card: #e9eef0;
+      --card-text: #20313d;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin: 0;
       min-height: 100vh;
-      padding: 20px;
+      padding: clamp(12px, 3vw, 34px);
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 15% 0%, #294858 0, transparent 42%),
+        linear-gradient(135deg, #0d1721, #172633 55%, #0c1721);
+      font-family: Arial, Helvetica, sans-serif;
     }
-    .card {
-      background-color: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 32px;
-      width: 100%;
-      max-width: 360px;
-      text-align: center;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    .dashboard { width: min(1120px, 100%); margin: 0 auto; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; padding: 8px 4px 18px;
+      border-bottom: 2px solid var(--line);
     }
-    .location { font-size: 1.1rem; color: #94a3b8; font-weight: 500; }
-    .temp-display {
-      font-size: 4rem;
-      font-weight: 700;
-      color: #38bdf8;
-      margin: 24px 0;
+    .brand { display: flex; align-items: center; gap: 15px; min-width: 0; }
+    .home-icon { font-size: 35px; flex: 0 0 auto; }
+    h1 { margin: 0 0 5px; font-size: clamp(22px, 3vw, 30px); }
+    .subtitle { color: var(--muted); font-size: 12px; letter-spacing: .5px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    .tag {
+      border: 1px solid #527080; border-radius: 5px; padding: 3px 7px;
+      color: #c5d5dc; font-size: 10px; letter-spacing: .4px;
     }
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.875rem;
-      color: #cbd5e1;
-      background: #0f172a;
-      padding: 6px 14px;
-      border-radius: 20px;
+    .tag.online { color: var(--good); border-color: #3e9e8d; }
+    .clock { text-align: right; flex: 0 0 auto; }
+    .date { color: #c5d2d9; font-size: 15px; text-transform: lowercase; }
+    .time { font-size: clamp(28px, 5vw, 48px); font-weight: 700; letter-spacing: 1px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .sensor { min-width: 0; border: 1px solid #416475; border-radius: 9px; overflow: hidden; background: #142532; }
+    .sensor-title {
+      display: flex; align-items: center; gap: 10px; padding: 8px 13px;
+      font-weight: 700; font-size: 19px; border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #1d3545, #142532);
     }
-    .dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; }
-  </style>
-</head>
-<body>
-
-  <div class="card">
-    <div class="location">Zlatar, Croatia</div>
-    <div class="temp-display" id="temp">--.- °C</div>
-    <div class="status">
-      <span class="dot"></span> Live Cloud Sync
-    </div>
-  </div>
-
-  <script>
-    // Direktni link na temperaturu unutar baze
-    const FIREBASE_URL = "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app/zlatar_station/temperature.json";
-
-    async function fetchTemperature() {
-      try {
-        const response = await fetch(FIREBASE_URL);
-        const data = await response.json();
-        
-        console.log("Podatak iz Firebasea:", data);
-
-        if (data !== null && data !== undefined) {
-          document.getElementById('temp').innerText = `${Number(data).toFixed(1)} °C`;
-        } else {
-          document.getElementById('temp').innerText = "Nema podataka";
-        }
-      } catch (err) {
-        console.error("Greška kod dohvaćanja:", err);
-      }
+    .sensor-title .icon { font-size: 20px; }
+    .sensor-body {
+      min-height: 104px; padding: 10px 15px 8px; color: var(--card-text);
+      background: linear-gradient(110deg, #edf1f2, #dce5e8);
+      display: grid; grid-template-columns: 1.1fr .9fr; align-items: center;
     }
-
-    fetchTemperature();
-    setInterval(fetchTemperature, 10000);
-  </script>
-
-</body>
-</html>
+    .temperature { display: flex; align-items: flex-start; gap: 8px; font-size: clamp(35px, 5vw, 55px); font-weight: 700; line-height: 1; }
+    .thermo { font-size: 22px; margin-top: 8px; color: #81949d; }
+    .unit { font-size: 20px; font-weight: 400; margin: 5px 0 0 1px; }
+    .humidity { border-left: 1px solid #c5d0d4; padding-left: 17px; }
+    .humidity-value { font-size: 22px; font-weight: 700; white-space: nowrap; }
+    .drop { color: #77aab5; margin-right: 4px; }
+    .percent { font-size: 12px; font-weight: 400; color: #586c76; }
+    .bar { height: 8px; margin-top: 8px; border-radius: 10px; background: #cbd6d8; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #2bc8c0, #67d2ae); transition: width .3s; }
+    .sensor-foot { padding: 7px 13px; color: #71848d; font-size: 12px; background: #e5ebed; }
+    .sensor-foot strong { color: #4c897d; font-weight: 600; }
+    .forecast-section { margin-top: 17px; border: 1px solid #416475; border-radius: 9px; overflow: hidden; }
+    .section-title { padding: 9px 13px; font-size: 19px; font-weight: 700; background: linear-gradient(90deg, #1d3545, #142532); border-bottom: 1px solid var(--line); }
+    .forecast-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 10px; background: #142532; }
+    .forecast-card { color: var(--card-text); background: #e5ecee; border-radius: 7px; overflow: hidden; min-width: 0; }
+    .forecast-heading { padding: 7px 10px; color: #f2f7f8; background: #496574; font-weight: 700; }
+    .forecast-content { padding: 10px; min-height: 105px; display: flex; gap: 12px; align-items: flex-start; }
+    .weather-icon { font-size: 34px; }
+    .forecast-details { font-size: 12px; line-height: 1.8; }
+    .forecast-details strong { font-size: 14px; }
+    .description { margin-top: 4px; font-size: 11px; color: #526772; }
+    .forecast-foot { display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid #cbd5d8; font-size: 10px; color: #61747d; }
+    .footer { display: flex; justify-content: space-between; gap: 12px; color: #8ea2ad; font-size: 10px; padding: 12px 3px 0;
