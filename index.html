@@ -59,11 +59,37 @@ h1{margin:0;font-size:clamp(24px,3vw,38px);letter-spacing:-.5px;line-height:1.1}
 .ff div{display:flex;align-items:center;gap:6px}.ff strong{color:var(--text)}
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px;padding:0 4px;color:#6f8997;font-size:12px}
 .empty{padding:30px;text-align:center;color:var(--mut)}
-@media(max-width:900px){.fg{grid-template-columns:1fr}.clock{text-align:left}.fb{padding-top:14px}}
+/* ===== LOGIN ===== */
+body.locked .wrap{display:none}
+.lock{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:20px;background:rgba(4,12,18,.9);backdrop-filter:blur(10px)}
+body.locked .lock{display:grid}
+.lb{width:min(100%,400px);background:var(--glass);border:1px solid var(--edge);border-radius:22px;padding:28px 26px;box-shadow:0 20px 60px #000a;text-align:center}
+.lb .logo{margin:0 auto 14px}
+.lb h2{margin:0 0 4px;font-size:24px}.lb p{margin:0 0 18px;color:var(--mut);font-size:14px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;border-radius:14px;background:#0a1c27;border:1px solid var(--edge);margin-bottom:14px}
+.seg button{padding:10px;border:0;border-radius:10px;background:transparent;color:var(--mut);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+.seg button.on{background:#1d4457;color:var(--text);box-shadow:0 0 0 1px var(--cyan) inset}
+.lb input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--edge);background:#0a1c27;color:var(--text);font-size:16px;font-family:inherit;outline:none}
+.lb input:focus{border-color:var(--cyan)}
+.go{width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:var(--cyan);color:#04202a;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
+.err{min-height:20px;margin-top:10px;font-size:13px;color:#ff9a62}
+.ub{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-top:10px}
+.ub[hidden],.btn[hidden]{display:none}
+.btn{padding:7px 14px;border-radius:99px;border:1px solid var(--edge);background:#0e2431;color:var(--text);font-size:12px;font-weight:700;font-family:inherit;letter-spacing:.4px;cursor:pointer}
+.btn.pri{border-color:#2f8f78;color:var(--ok)}.btn:disabled{opacity:.55;cursor:wait}
+@media(max-width:900px){.fg{grid-template-columns:1fr}.clock{text-align:left}.ub{justify-content:flex-start}.fb{padding-top:14px}}
 @media(max-width:480px){.cb{grid-template-columns:1fr}.hum{border:0;padding:0}}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="lock"><div class="lb">
+  <div class="logo" data-i="house" data-s="32"></div>
+  <h2>Weather Station Home</h2><p>Prijavite se za pristup</p>
+  <div class="seg"><button type="button" id="rg" class="on">Gost</button><button type="button" id="ra">Admin</button></div>
+  <form id="lf" autocomplete="off"><input type="password" id="pw" placeholder="Lozinka" autocomplete="current-password">
+  <button class="go" type="submit">Prijava</button></form>
+  <div class="err" id="lerr"></div>
+</div></div>
 <div class="wrap">
 <header class="top">
   <div class="brand">
@@ -71,7 +97,10 @@ h1{margin:0;font-size:clamp(24px,3vw,38px);letter-spacing:-.5px;line-height:1.1}
     <div><h1>Weather Station Home</h1><div class="sub">ESP32-S3 · Ratkovec 4 · Zlatar</div>
       <div class="chips"><span class="chip" id="conn"><i></i><span id="connT">SPAJANJE</span></span><span class="chip" id="nloc">–</span><span class="chip" id="age" hidden></span></div></div>
   </div>
-  <div class="clock"><div id="date">--</div><div id="time">--:--:--</div></div>
+  <div class="clock"><div id="date">--</div><div id="time">--:--:--</div>
+    <div class="ub" id="ub" hidden><span class="chip" id="who"><i></i><span id="whoT"></span></span>
+      <button class="btn pri" id="rf" hidden>↻ OSVJEŽI FIREBASE</button><button class="btn" id="lo">ODJAVA</button></div>
+  </div>
 </header>
 <main class="grid" id="rooms"><div class="empty">Čekam podatke iz Firebasea…</div></main>
 <section class="sec">
@@ -88,6 +117,11 @@ const STALE_MIN=25;           // ESP šalje svakih 10 min; nakon 25 min podaci s
 // Vani = polja izravno u zlatar_station (temperature, humidity, pressure).
 // Dodatne sobe (po želji): zlatar_station/living, room1, room2 -> {temperature, humidity}
 const ROOMS=[{k:"outside",n:"Vani",i:"sun"},{k:"living",n:"Boravak",i:"sofa"},{k:"room1",n:"Soba 1",i:"bed"},{k:"room2",n:"Soba 2",i:"bed"}];
+
+// ====== LOZINKE (PROMIJENI!) ======
+// Pazi: zaštita je u pregledniku i lozinke su vidljive u izvornom kodu.
+const AUTH={admin:"admin123",guest:"guest123"};
+const GUEST_MIN=5;            // gost se automatski odjavljuje nakon 5 minuta; admin ostaje prijavljen
 
 const S={
  house:'<path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-7h6v7"/>',
@@ -117,7 +151,7 @@ function tick(){const n=new Date();$("date").textContent=df.format(n);$("time").
 tick();setInterval(tick,1000);
 
 // ====== FIREBASE (REST + SSE, bez API ključa) ======
-let state={},lastRx=0;
+let state={},lastRx=0,es=null,pollT=null;
 function apply(path,data,merge){
  const p=path.split("/").filter(Boolean);
  if(!p.length){state=merge?{...state,...(data||{})}:(data&&typeof data==="object"?data:{});return}
@@ -129,7 +163,7 @@ function onData(){lastRx=Date.now();setConn("live","FIREBASE UŽIVO");render()}
 function setConn(cls,txt){$("conn").className="chip "+cls;$("connT").textContent=txt}
 function startStream(){
  try{
-  const es=new EventSource(DB_URL+".json");
+  es=new EventSource(DB_URL+".json");
   for(const t of["put","patch"])es.addEventListener(t,e=>{try{const m=JSON.parse(e.data);apply(m.path||"/",m.data,t==="patch");onData()}catch(x){console.error(x)}});
   es.onerror=()=>setConn("warn","PONOVNO SPAJANJE");
   es.addEventListener("auth_revoked",()=>setConn("warn","NEMA DOZVOLE"));
@@ -151,6 +185,7 @@ function status(t,h){
  return["Udobno ✓",0];
 }
 function render(){
+ if(!role)return;
  const cards=[];
  for(const r of ROOMS){
   const d=r.k==="outside"?(state.outside&&typeof state.outside==="object"?state.outside:state):state[r.k];
@@ -201,7 +236,72 @@ function renderForecast(){
   <div class="ds">${desc}</div>
   <div class="ff"><div>${ico("umbrella",20)}Kiša <strong>${num(d.rain)??0}%</strong></div><div>${ico("wind",20)}<strong>${Math.round(num(d.wind)||0)} km/h (${dir(num(d.direction)||0)})</strong></div></div></article>`}).join("");
 }
-startStream();poll();setInterval(poll,30000);
+
+// ====== PRIJAVA / SESIJA ======
+const SKEY="ws_session";
+let role=null,start=0,cdT=null,pick="guest";
+const store={
+ get(){try{return JSON.parse(sessionStorage.getItem(SKEY))}catch(e){return null}},
+ set(v){try{sessionStorage.setItem(SKEY,JSON.stringify(v))}catch(e){}},
+ clear(){try{sessionStorage.removeItem(SKEY)}catch(e){}}
+};
+const EXPIRED="Gostujuća sesija je istekla (5 min). Prijavite se ponovno.";
+function setPick(r){pick=r;$("rg").classList.toggle("on",r==="guest");$("ra").classList.toggle("on",r==="admin");$("pw").focus()}
+$("rg").onclick=()=>setPick("guest");$("ra").onclick=()=>setPick("admin");
+function connect(){
+ if(es){es.close();es=null}
+ clearInterval(pollT);
+ startStream();poll();pollT=setInterval(poll,30000);
+}
+function countdown(){
+ const left=start+GUEST_MIN*60000-Date.now();
+ if(left<=0){logout(EXPIRED);return}
+ const m=Math.floor(left/60000),s=Math.floor(left%60000/1000);
+ $("whoT").textContent="GOST · "+m+":"+String(s).padStart(2,"0");
+}
+function enter(r,t){
+ role=r;start=t;
+ document.body.classList.remove("locked");
+ $("ub").hidden=false;$("rf").hidden=r!=="admin";
+ clearInterval(cdT);
+ if(r==="guest"){countdown();cdT=setInterval(countdown,1000)}else $("whoT").textContent="ADMIN";
+ $("who").className="chip "+(r==="admin"?"live":"warn");
+ connect();
+}
+function logout(msg){
+ role=null;clearInterval(cdT);clearInterval(pollT);
+ if(es){es.close();es=null}
+ store.clear();state={};lastRx=0;
+ $("rooms").innerHTML='<div class="empty">Čekam podatke iz Firebasea…</div>';
+ $("fc").innerHTML='<div class="fc empty">Čekam prognozu iz Firebasea…</div>';
+ $("age").hidden=true;setConn("","SPAJANJE");
+ $("ub").hidden=true;$("pw").value="";$("lerr").textContent=msg||"";
+ document.body.classList.add("locked");
+}
+$("lf").onsubmit=e=>{
+ e.preventDefault();
+ if($("pw").value!==AUTH[pick]){$("lerr").textContent="Pogrešna lozinka.";$("pw").value="";return}
+ const t=Date.now();store.set({role:pick,start:t});$("lerr").textContent="";$("pw").value="";enter(pick,t);
+};
+$("lo").onclick=()=>logout("");
+// Admin: ručno osvježavanje Firebasea (ponovno otvara stream + dohvaća cijelu bazu)
+$("rf").onclick=async()=>{
+ if(role!=="admin")return;
+ const b=$("rf");b.disabled=true;b.textContent="OSVJEŽAVAM…";
+ if(es){es.close();es=null}
+ startStream();
+ await poll();
+ b.disabled=false;b.textContent="✓ OSVJEŽENO "+hhmm(new Date());
+ setTimeout(()=>{if(!b.disabled&&role==="admin")b.textContent="↻ OSVJEŽI FIREBASE"},3000);
+};
+// Povrat sesije nakon reloada (gostu se vrijeme NE resetira)
+(function(){
+ const s=store.get();
+ if(!s)return;
+ if(s.role==="admin")enter("admin",s.start);
+ else if(s.role==="guest"&&Date.now()-s.start<GUEST_MIN*60000)enter("guest",s.start);
+ else logout(EXPIRED);
+})();
 </script>
 </body>
 </html>
