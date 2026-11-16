@@ -1,316 +1,207 @@
 <!DOCTYPE html>
 <html lang="hr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101d2b">
-  <title>Weather Station Home</title>
-  <style>
-    :root {
-      --bg: #101923;
-      --panel: #172735;
-      --panel-2: #1d3443;
-      --line: #28c8c1;
-      --text: #eef5f8;
-      --muted: #a8bac5;
-      --good: #5ed3b2;
-      --card: #e9eef0;
-      --card-text: #20313d;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: clamp(12px, 3vw, 34px);
-      color: var(--text);
-      background:
-        radial-gradient(ellipse at 15% 0%, #294858 0, transparent 42%),
-        linear-gradient(135deg, #0d1721, #172633 55%, #0c1721);
-      font-family: Arial, Helvetica, sans-serif;
-    }
-    .dashboard { width: min(1120px, 100%); margin: 0 auto; }
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 20px; padding: 8px 4px 18px;
-      border-bottom: 2px solid var(--line);
-    }
-    .brand { display: flex; align-items: center; gap: 15px; min-width: 0; }
-    .home-icon { font-size: 35px; flex: 0 0 auto; }
-    h1 { margin: 0 0 5px; font-size: clamp(22px, 3vw, 30px); }
-    .subtitle { color: var(--muted); font-size: 12px; letter-spacing: .5px; }
-    .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
-    .tag {
-      border: 1px solid #527080; border-radius: 5px; padding: 3px 7px;
-      color: #c5d5dc; font-size: 10px; letter-spacing: .4px;
-    }
-    .tag.online { color: var(--good); border-color: #3e9e8d; }
-    .clock { text-align: right; flex: 0 0 auto; }
-    .date { color: #c5d2d9; font-size: 15px; text-transform: lowercase; }
-    .time { font-size: clamp(28px, 5vw, 48px); font-weight: 700; letter-spacing: 1px; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-    .sensor { min-width: 0; border: 1px solid #416475; border-radius: 9px; overflow: hidden; background: #142532; }
-    .sensor-title {
-      display: flex; align-items: center; gap: 10px; padding: 8px 13px;
-      font-weight: 700; font-size: 19px; border-bottom: 1px solid var(--line);
-      background: linear-gradient(90deg, #1d3545, #142532);
-    }
-    .sensor-title .icon { font-size: 20px; }
-    .sensor-body {
-      min-height: 104px; padding: 10px 15px 8px; color: var(--card-text);
-      background: linear-gradient(110deg, #edf1f2, #dce5e8);
-      display: grid; grid-template-columns: 1.1fr .9fr; align-items: center;
-    }
-    .temperature { display: flex; align-items: flex-start; gap: 8px; font-size: clamp(35px, 5vw, 55px); font-weight: 700; line-height: 1; }
-    .thermo { font-size: 22px; margin-top: 8px; color: #81949d; }
-    .unit { font-size: 20px; font-weight: 400; margin: 5px 0 0 1px; }
-    .humidity { border-left: 1px solid #c5d0d4; padding-left: 17px; }
-    .humidity-value { font-size: 22px; font-weight: 700; white-space: nowrap; }
-    .drop { color: #77aab5; margin-right: 4px; }
-    .percent { font-size: 12px; font-weight: 400; color: #586c76; }
-    .bar { height: 8px; margin-top: 8px; border-radius: 10px; background: #cbd6d8; overflow: hidden; }
-    .bar-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #2bc8c0, #67d2ae); transition: width .3s; }
-    .sensor-foot { padding: 7px 13px; color: #71848d; font-size: 12px; background: #e5ebed; }
-    .sensor-foot strong { color: #4c897d; font-weight: 600; }
-    .forecast-section { margin-top: 17px; border: 1px solid #416475; border-radius: 9px; overflow: hidden; }
-    .section-title { padding: 9px 13px; font-size: 19px; font-weight: 700; background: linear-gradient(90deg, #1d3545, #142532); border-bottom: 1px solid var(--line); }
-    .forecast-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 10px; background: #142532; }
-    .forecast-card { color: var(--card-text); background: #e5ecee; border-radius: 7px; overflow: hidden; min-width: 0; }
-    .forecast-heading { padding: 7px 10px; color: #f2f7f8; background: #496574; font-weight: 700; }
-    .forecast-content { padding: 10px; min-height: 105px; display: flex; gap: 12px; align-items: flex-start; }
-    .weather-icon { font-size: 34px; }
-    .forecast-details { font-size: 12px; line-height: 1.8; }
-    .forecast-details strong { font-size: 14px; }
-    .description { margin-top: 4px; font-size: 11px; color: #526772; }
-    .forecast-foot { display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid #cbd5d8; font-size: 10px; color: #61747d; }
-    .footer { display: flex; justify-content: space-between; gap: 12px; color: #8ea2ad; font-size: 10px; padding: 12px 3px 0; }
-    .muted { color: #82939c; }
-    @media (max-width: 650px) {
-      body { padding: 12px; }
-      .topbar { align-items: flex-start; flex-direction: column; gap: 12px; }
-      .clock { text-align: left; }
-      .grid { grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
-      .sensor-body { min-height: 94px; }
-      .forecast-grid { grid-template-columns: 1fr; }
-      .forecast-content { min-height: 80px; }
-      .footer { flex-direction: column; }
-    }
-    @media (max-width: 360px) {
-      .sensor-body { grid-template-columns: 1fr .85fr; padding: 9px; }
-      .temperature { font-size: 34px; }
-      .humidity { padding-left: 10px; }
-      .humidity-value { font-size: 18px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07131c">
+<title>Weather Station Home</title>
+<style>
+:root{--bg:#07131c;--glass:rgba(22,45,60,.72);--edge:rgba(120,170,195,.22);--cyan:#19d3c5;--text:#eef6f9;--mut:#8fa9b6;--ok:#4be0b0;--warn:#f2c36b}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+background:radial-gradient(900px 500px at 10% -10%,#1b4a5c66,transparent 60%),radial-gradient(700px 500px at 100% 0,#14394f55,transparent 60%),linear-gradient(160deg,#06111a,#0c2230 60%,#06111a);background-attachment:fixed;
+padding:max(14px,env(safe-area-inset-top)) clamp(12px,2.5vw,32px) max(14px,env(safe-area-inset-bottom))}
+svg{display:block;flex-shrink:0}
+.wrap{max-width:1500px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:6px 2px 18px;border-bottom:1px solid var(--edge);position:relative}
+.top::after{content:"";position:absolute;left:0;bottom:-1px;width:160px;height:2px;background:var(--cyan);box-shadow:0 0 14px var(--cyan)}
+.brand{display:flex;align-items:center;gap:16px;min-width:0}
+.logo{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;color:var(--cyan);background:linear-gradient(145deg,#173a4b,#0d2331);border:1px solid var(--edge);box-shadow:0 6px 20px #0006}
+h1{margin:0;font-size:clamp(24px,3vw,38px);letter-spacing:-.5px;line-height:1.1}
+.sub{color:var(--mut);font-size:clamp(12px,1.1vw,15px);margin-top:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{display:flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.6px;color:#b9ced8;border:1px solid var(--edge);background:#0e24316b}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--mut)}
+.chip.live{color:var(--ok);border-color:#2f8f78}.chip.live i{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 2s infinite}
+.chip.warn{color:var(--warn);border-color:#8a6e35}.chip.warn i{background:var(--warn)}
+@keyframes pulse{50%{opacity:.35}}
+.clock{text-align:right}
+#date{font-size:clamp(15px,1.7vw,24px);color:#bcd0d9}
+#time{font-size:clamp(46px,6.5vw,92px);font-weight:800;line-height:1;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px;margin-top:20px}
+.card,.fc{background:var(--glass);border:1px solid var(--edge);border-radius:20px;backdrop-filter:blur(8px);box-shadow:0 10px 30px #0005;overflow:hidden}
+.ct{display:flex;align-items:center;gap:12px;padding:14px 20px;font-size:clamp(20px,2vw,27px);font-weight:700;border-bottom:1px solid var(--edge);background:linear-gradient(90deg,#1d4457aa,transparent)}
+.ct svg{color:var(--cyan)}
+.cb{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:center;padding:20px 22px 14px}
+.temp{display:flex;align-items:flex-start;font-weight:800;line-height:1;font-size:clamp(64px,8vw,116px);letter-spacing:-3px;font-variant-numeric:tabular-nums;color:var(--c,#5ee0b4);text-shadow:0 0 30px color-mix(in srgb,var(--c,#5ee0b4) 40%,transparent)}
+.temp small{font-size:.38em;font-weight:500;letter-spacing:0;margin:.18em 0 0 4px;color:#cfe0e7}
+.hum{border-left:1px solid var(--edge);padding-left:20px}
+.hv{display:flex;align-items:center;gap:8px;font-size:clamp(30px,3.4vw,52px);font-weight:800}
+.hv svg{color:#6cc3e8}.hv span small{font-size:.38em;color:var(--mut);font-weight:600;margin-left:3px}
+.bar{height:10px;border-radius:9px;background:#ffffff1a;margin-top:12px;overflow:hidden}
+.bar b{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#1fa6d8,#19d3c5);transition:width .8s}
+.cf{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 22px 18px;color:var(--mut);font-size:clamp(14px,1.3vw,18px)}
+.cf strong{color:var(--text)}
+.pill{padding:3px 12px;border-radius:99px;font-weight:700;background:#4be0b01f;color:var(--ok)}
+.pill.w{background:#f2c36b22;color:var(--warn)}
+.sec{margin-top:22px}
+.st{display:flex;align-items:center;gap:12px;font-size:clamp(20px,2vw,27px);font-weight:700;margin:0 4px 12px}
+.st svg{color:var(--cyan)}.st em{margin-left:auto;font-style:normal;font-size:13px;font-weight:500;color:var(--mut)}
+.fg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.fc .dn{padding:10px 18px;font-weight:700;font-size:clamp(17px,1.6vw,22px);background:#2a566b66;display:flex;justify-content:space-between}
+.dn span{color:var(--mut);font-weight:500;font-size:.78em}
+.fb{display:flex;align-items:center;gap:18px;padding:18px 20px 10px}
+.fi{color:var(--cyan);width:84px;height:84px;filter:drop-shadow(0 0 12px #19d3c555)}
+.fi svg{width:100%;height:100%}
+.mx{font-size:clamp(26px,2.5vw,38px);font-weight:800}.mn{font-size:clamp(18px,1.8vw,26px);color:#8cc6e8;font-weight:600}
+.ds{padding:0 20px 8px;font-weight:600;color:#cfe0e7}
+.ff{display:flex;justify-content:space-between;gap:10px;padding:12px 20px 16px;color:var(--mut);font-size:clamp(13px,1.2vw,16px)}
+.ff div{display:flex;align-items:center;gap:6px}.ff strong{color:var(--text)}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px;padding:0 4px;color:#6f8997;font-size:12px}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+@media(max-width:900px){.fg{grid-template-columns:1fr}.clock{text-align:left}.fb{padding-top:14px}}
+@media(max-width:480px){.cb{grid-template-columns:1fr}.hum{border:0;padding:0}}
+</style>
 </head>
 <body>
-  <main class="dashboard">
-    <header class="topbar">
-      <div class="brand">
-        <div class="home-icon">⌂</div>
-        <div>
-          <h1>Weather Station Home</h1>
-          <div class="subtitle">ESP32-S3 · INDUSTRIJSKI NADZOR · ZLATAR</div>
-          <div class="tags">
-            <span class="tag" id="connectionTag">● ČEKA SE FIREBASE</span>
-            <span class="tag">4 LOKACIJE</span>
-            <span class="tag">V1.2</span>
-          </div>
-        </div>
-      </div>
-      <div class="clock">
-        <div class="date" id="date">--</div>
-        <div class="time" id="time">--:--:--</div>
-      </div>
-    </header>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="logo" data-i="house" data-s="32"></div>
+    <div><h1>Weather Station Home</h1><div class="sub">ESP32-S3 · Ratkovec 4 · Zlatar</div>
+      <div class="chips"><span class="chip" id="conn"><i></i><span id="connT">SPAJANJE</span></span><span class="chip" id="nloc">–</span><span class="chip" id="age" hidden></span></div></div>
+  </div>
+  <div class="clock"><div id="date">--</div><div id="time">--:--:--</div></div>
+</header>
+<main class="grid" id="rooms"><div class="empty">Čekam podatke iz Firebasea…</div></main>
+<section class="sec">
+  <div class="st"><span data-i="calendar" data-s="30"></span>Prognoza za 3 dana<em>Zlatar · Open-Meteo preko ESP32</em></div>
+  <div class="fg" id="fc"><div class="fc empty">Čekam prognozu iz Firebasea…</div></div>
+</section>
+<footer class="foot"><span id="fbInfo">Izvor: ESP32-S3 → Firebase Realtime Database → ova stranica</span><span id="upd">Zadnje ažuriranje: --</span></footer>
+</div>
+<script>
+'use strict';
+// ====== POSTAVKE ======
+const DB_URL="https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app/zlatar_station";
+const STALE_MIN=25;           // ESP šalje svakih 10 min; nakon 25 min podaci se označe kao stari
+// Vani = polja izravno u zlatar_station (temperature, humidity, pressure).
+// Dodatne sobe (po želji): zlatar_station/living, room1, room2 -> {temperature, humidity}
+const ROOMS=[{k:"outside",n:"Vani",i:"sun"},{k:"living",n:"Boravak",i:"sofa"},{k:"room1",n:"Soba 1",i:"bed"},{k:"room2",n:"Soba 2",i:"bed"}];
 
-    <section class="grid" aria-label="Trenutna mjerenja">
-      <article class="sensor">
-        <div class="sensor-title"><span class="icon">♧</span> Vani</div>
-        <div class="sensor-body">
-          <div class="temperature"><span class="thermo">♨</span><span id="outsideTemp">--.-</span><span class="unit">°C</span></div>
-          <div class="humidity">
-            <div class="humidity-value"><span class="drop">♢</span><span id="outsideHumidity">--</span><span class="percent">% RH</span></div>
-            <div class="bar"><div class="bar-fill" id="outsideBar"></div></div>
-          </div>
-        </div>
-        <div class="sensor-foot">Tlak zraka: <strong id="pressure">---- hPa</strong></div>
-      </article>
+const S={
+ house:'<path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-7h6v7"/>',
+ drop:'<path d="M12 22a8 8 0 0 0 8-8c0-5-8-12-8-12S4 9 4 14a8 8 0 0 0 8 8Z"/>',
+ gauge:'<path d="M4.3 19a9 9 0 1 1 15.4 0"/><path d="m12 15 4-5"/><path d="M5 15h2M17 15h2M12 5v2"/>',
+ sofa:'<path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><rect x="3" y="11" width="18" height="8" rx="2"/><path d="M5 19v2m14-2v2"/>',
+ bed:'<path d="M3 17V5m18 12V5"/><path d="M3 17h18v4H3z"/><path d="M3 11h18v6H3z"/><path d="M5 8h6v3H5zM13 8h6v3h-6z"/>',
+ wind:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M2 12h18a3 3 0 1 1-3 3"/><path d="M4 16h7a3 3 0 1 1-3 3"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+ umbrella:'<path d="M12 2v2M3 13a9 9 0 0 1 18 0H3Z"/><path d="M12 13v6a3 3 0 0 0 6 0"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+ cloud:'<path d="M7 19a5 5 0 0 1-.4-10A7 7 0 0 1 20 11.5 3.7 3.7 0 0 1 19 19H7Z"/>',
+ 'cloud-sun':'<path d="M4 13a4 4 0 0 1 1-7 5 5 0 0 1 8 2"/><path d="M4 2V1M1 6H0M8 3l2-2"/><path d="M8 21a5 5 0 0 1-.2-10 6 6 0 0 1 11 2.5A3.7 3.7 0 0 1 18 21H8Z"/>',
+ rain:'<path d="M7 17a5 5 0 0 1-.4-10A7 7 0 0 1 20 9.5 3.7 3.7 0 0 1 19 17H7Z"/><path d="m8 19-1 3m6-3-1 3m6-3-1 3"/>',
+ snow:'<path d="M7 17a5 5 0 0 1-.4-10A7 7 0 0 1 20 9.5 3.7 3.7 0 0 1 19 17H7Z"/><path d="M7 21h2m-1-1v2m5-1h2m-1-1v2m5-1h2m-1-1v2"/>',
+ storm:'<path d="M7 16a5 5 0 0 1-.4-10A7 7 0 0 1 20 8.5 3.7 3.7 0 0 1 19 16H7Z"/><path d="m13 16-3 4h4l-2 3"/>',
+ fog:'<path d="M7 13a5 5 0 0 1-.4-9A7 7 0 0 1 20 7 3.7 3.7 0 0 1 19 13H7Z"/><path d="M3 17h18M5 21h14"/>'
+};
+const ico=(n,s=24)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${S[n]||S.cloud}</svg>`;
+document.querySelectorAll("[data-i]").forEach(e=>e.innerHTML=ico(e.dataset.i,+e.dataset.s||24));
+const $=id=>document.getElementById(id), num=v=>{const n=Number(v);return v!==null&&v!==""&&v!==undefined&&Number.isFinite(n)?n:null};
+const hhmm=d=>d.toLocaleTimeString("hr-HR",{hour:"2-digit",minute:"2-digit"});
 
-      <article class="sensor">
-        <div class="sensor-title"><span class="icon">▣</span> Boravak</div>
-        <div class="sensor-body">
-          <div class="temperature"><span class="thermo">♨</span><span id="livingTemp">--.-</span><span class="unit">°C</span></div>
-          <div class="humidity">
-            <div class="humidity-value"><span class="drop">♢</span><span id="livingHumidity">--</span><span class="percent">% RH</span></div>
-            <div class="bar"><div class="bar-fill" id="livingBar"></div></div>
-          </div>
-        </div>
-        <div class="sensor-foot">Status: <strong id="livingStatus">--</strong></div>
-      </article>
+// ====== SAT ======
+const df=new Intl.DateTimeFormat("hr-HR",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Zagreb"});
+function tick(){const n=new Date();$("date").textContent=df.format(n);$("time").textContent=n.toLocaleTimeString("hr-HR",{timeZone:"Europe/Zagreb",hour12:false})}
+tick();setInterval(tick,1000);
 
-      <article class="sensor">
-        <div class="sensor-title"><span class="icon">▤</span> Soba 1</div>
-        <div class="sensor-body">
-          <div class="temperature"><span class="thermo">♨</span><span id="room1Temp">--.-</span><span class="unit">°C</span></div>
-          <div class="humidity">
-            <div class="humidity-value"><span class="drop">♢</span><span id="room1Humidity">--</span><span class="percent">% RH</span></div>
-            <div class="bar"><div class="bar-fill" id="room1Bar"></div></div>
-          </div>
-        </div>
-        <div class="sensor-foot">Status: <strong id="room1Status">--</strong></div>
-      </article>
+// ====== FIREBASE (REST + SSE, bez API ključa) ======
+let state={},lastRx=0;
+function apply(path,data,merge){
+ const p=path.split("/").filter(Boolean);
+ if(!p.length){state=merge?{...state,...(data||{})}:(data&&typeof data==="object"?data:{});return}
+ let o=state;for(let i=0;i<p.length-1;i++){if(!o[p[i]]||typeof o[p[i]]!=="object")o[p[i]]={};o=o[p[i]]}
+ const k=p[p.length-1];
+ o[k]=merge&&data&&typeof data==="object"?{...(o[k]||{}),...data}:data;
+}
+function onData(){lastRx=Date.now();setConn("live","FIREBASE UŽIVO");render()}
+function setConn(cls,txt){$("conn").className="chip "+cls;$("connT").textContent=txt}
+function startStream(){
+ try{
+  const es=new EventSource(DB_URL+".json");
+  for(const t of["put","patch"])es.addEventListener(t,e=>{try{const m=JSON.parse(e.data);apply(m.path||"/",m.data,t==="patch");onData()}catch(x){console.error(x)}});
+  es.onerror=()=>setConn("warn","PONOVNO SPAJANJE");
+  es.addEventListener("auth_revoked",()=>setConn("warn","NEMA DOZVOLE"));
+ }catch(e){console.error(e)}
+}
+async function poll(){ // sigurnosna kopija ako je SSE blokiran
+ try{const r=await fetch(DB_URL+".json",{cache:"no-store"});
+  if(r.status===401||r.status===403){setConn("warn","NEMA DOZVOLE (RULES)");return}
+  if(!r.ok)throw new Error(r.status);apply("/",await r.json(),false);onData();
+ }catch(e){setConn("warn","NEMA VEZE")}
+}
 
-      <article class="sensor">
-        <div class="sensor-title"><span class="icon">▣</span> Soba 2</div>
-        <div class="sensor-body">
-          <div class="temperature"><span class="thermo">♨</span><span id="room2Temp">--.-</span><span class="unit">°C</span></div>
-          <div class="humidity">
-            <div class="humidity-value"><span class="drop">♢</span><span id="room2Humidity">--</span><span class="percent">% RH</span></div>
-            <div class="bar"><div class="bar-fill" id="room2Bar"></div></div>
-          </div>
-        </div>
-        <div class="sensor-foot">Status: <strong id="room2Status">--</strong></div>
-      </article>
-    </section>
+// ====== PRIKAZ SENZORA ======
+const tc=t=>t<=0?"#7cc4ff":t<10?"#5fd8e8":t<20?"#5ee0b4":t<27?"#f3d37a":"#ff9a62";
+function status(t,h){
+ if(t===null)return["--",1];
+ if(t<18)return["Hladno",1];if(t>26)return["Toplo",1];
+ if(h!==null&&h<30)return["Presuho",1];if(h!==null&&h>65)return["Vlažno",1];
+ return["Udobno ✓",0];
+}
+function render(){
+ const cards=[];
+ for(const r of ROOMS){
+  const d=r.k==="outside"?(state.outside&&typeof state.outside==="object"?state.outside:state):state[r.k];
+  if(!d||typeof d!=="object")continue;
+  const t=num(d.temperature),h=num(d.humidity),p=num(d.pressure);
+  if(t===null&&h===null)continue;
+  const foot=r.k==="outside"
+   ?`<span>${ico("gauge",20)}</span><span>Tlak zraka: <strong>${p!==null?Math.round(p)+" hPa":"--"}</strong></span>`
+   :(()=>{const[s,w]=status(t,h);return`<span>Status:</span><span class="pill${w?" w":""}">${s}</span>`})();
+  cards.push(`<article class="card"><div class="ct">${ico(r.i,28)}${r.n}</div>
+   <div class="cb"><div class="temp" style="--c:${t!==null?tc(t):"#8fa9b6"}">${t!==null?t.toFixed(1):"--.-"}<small>°C</small></div>
+   <div class="hum"><div class="hv">${ico("drop",30)}<span>${h!==null?Math.round(h):"--"}<small>% RH</small></span></div>
+   <div class="bar"><b style="width:${h!==null?Math.max(0,Math.min(100,h)):0}%"></b></div></div></div>
+   <div class="cf">${foot}</div></article>`);
+ }
+ if(cards.length)$("rooms").innerHTML=cards.join("");
+ $("nloc").textContent=cards.length+(cards.length===1?" LOKACIJA":" LOKACIJE");
+ // starost podataka (ako ESP šalje polje "updated" - epoch sekunde)
+ const up=num(state.updated),ageEl=$("age");
+ if(up){const m=Math.round((Date.now()/1000-up)/60);ageEl.hidden=false;
+  ageEl.textContent=m<1?"AŽURIRANO UPRAVO":"PODACI STARI "+m+" MIN";
+  ageEl.className="chip "+(m>STALE_MIN?"warn":"live");
+  if(m>STALE_MIN)setConn("warn","ESP NE ŠALJE");}
+ renderForecast();
+ $("upd").textContent="Zadnje ažuriranje: "+hhmm(new Date(lastRx));
+}
+setInterval(()=>{if(lastRx&&Date.now()-lastRx>0)render()},60000);
 
-    <section class="forecast-section">
-      <div class="section-title">▦ &nbsp;Prognoza za 3 dana</div>
-      <div class="forecast-grid">
-        <article class="forecast-card">
-          <div class="forecast-heading">Danas</div>
-          <div class="forecast-content">
-            <div class="weather-icon" id="todayIcon">☁</div>
-            <div class="forecast-details">
-              <div>Max: <strong id="todayMax">--.- °C</strong></div>
-              <div>Min: <strong id="todayMin">--.- °C</strong></div>
-              <div class="description" id="todayDescription">Nema podataka</div>
-            </div>
-          </div>
-          <div class="forecast-foot"><span>☂ Kiša: <b id="todayRain">--%</b></span><span>Vjetar: <b id="todayWind">-- km/h</b></span></div>
-        </article>
-        <article class="forecast-card">
-          <div class="forecast-heading">Sutra</div>
-          <div class="forecast-content">
-            <div class="weather-icon" id="tomorrowIcon">☁</div>
-            <div class="forecast-details">
-              <div>Max: <strong id="tomorrowMax">--.- °C</strong></div>
-              <div>Min: <strong id="tomorrowMin">--.- °C</strong></div>
-              <div class="description" id="tomorrowDescription">Nema podataka</div>
-            </div>
-          </div>
-          <div class="forecast-foot"><span>☂ Kiša: <b id="tomorrowRain">--%</b></span><span>Vjetar: <b id="tomorrowWind">-- km/h</b></span></div>
-        </article>
-        <article class="forecast-card">
-          <div class="forecast-heading">Prekosutra</div>
-          <div class="forecast-content">
-            <div class="weather-icon" id="dayAfterIcon">☀</div>
-            <div class="forecast-details">
-              <div>Max: <strong id="dayAfterMax">--.- °C</strong></div>
-              <div>Min: <strong id="dayAfterMin">--.- °C</strong></div>
-              <div class="description" id="dayAfterDescription">Nema podataka</div>
-            </div>
-          </div>
-          <div class="forecast-foot"><span>☂ Kiša: <b id="dayAfterRain">--%</b></span><span>Vjetar: <b id="dayAfterWind">-- km/h</b></span></div>
-        </article>
-      </div>
-    </section>
-    <footer class="footer">
-      <span>Podaci senzora učitavaju se iz Firebase Realtime Database.</span>
-      <span id="lastUpdate">Zadnje ažuriranje: --</span>
-    </footer>
-  </main>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-
-    const firebaseConfig = {
-      databaseURL: "https://esp32-prof-63379-default-rtdb.europe-west1.firebasedatabase.app"
-    };
-
-    const DATABASE_PATH = "zlatar_station";
-
-    const $ = (id) => document.getElementById(id);
-    const show = (id, value, suffix = "") => {
-      $(id).textContent = value === undefined || value === null || value === ""
-        ? "--" : `${value}${suffix}`;
-    };
-
-    function updateSensor(data, prefix, statusId = null) {
-      data = data || {};
-      show(prefix + "Temp", data.temperature, "");
-      show(prefix + "Humidity", data.humidity, "");
-      const bar = $(prefix + "Bar");
-      const humidity = Number(data.humidity);
-      if (bar) {
-        bar.style.width = Number.isFinite(humidity) ? `${Math.max(0, Math.min(100, humidity))}%` : "0%";
-      }
-      if (statusId) show(statusId, data.status || "--");
-    }
-
-    function updateForecast(key, data) {
-      data = data || {};
-      const ids = { today: "today", tomorrow: "tomorrow", dayAfter: "dayAfter" };
-      const p = ids[key];
-      if (!p) return;
-      show(p + "Max", data.max, " °C");
-      show(p + "Min", data.min, " °C");
-      show(p + "Description", data.description || "Nema podataka");
-      show(p + "Rain", data.rain, "%");
-      show(p + "Wind", data.wind, " km/h");
-      show(p + "Icon", data.icon || "☁");
-    }
-
-    function updateDashboard(data) {
-      data = data || {};
-      
-      if (data.temperature !== undefined) {
-        show("outsideTemp", Number(data.temperature).toFixed(1), "");
-      } else {
-        updateSensor(data.outside, "outside");
-      }
-      
-      show("pressure", data.pressure || data.outside?.pressure, " hPa");
-      updateSensor(data.living, "living", "livingStatus");
-      updateSensor(data.room1, "room1", "room1Status");
-      updateSensor(data.room2, "room2", "room2Status");
-      
-      updateForecast("today", data.forecast?.today);
-      updateForecast("tomorrow", data.forecast?.tomorrow);
-      updateForecast("dayAfter", data.forecast?.dayAfter);
-      
-      $("lastUpdate").textContent = "Zadnje ažuriranje: " + new Date().toLocaleTimeString("hr-HR");
-    }
-
-    function updateClock() {
-      const now = new Date();
-      $("date").textContent = new Intl.DateTimeFormat("hr-HR", {
-        weekday: "short", day: "numeric", month: "long", year: "numeric"
-      }).format(now);
-      $("time").textContent = now.toLocaleTimeString("hr-HR");
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    const tag = $("connectionTag");
-
-    try {
-      const app = initializeApp(firebaseConfig);
-      const database = getDatabase(app);
-      tag.textContent = "● POVEZIVANJE...";
-      
-      onValue(ref(database, DATABASE_PATH), (snapshot) => {
-        updateDashboard(snapshot.val());
-        tag.textContent = "● FIREBASE POVEZAN";
-        tag.classList.add("online");
-      }, (error) => {
-        tag.textContent = "● GREŠKA POVEZIVANJA";
-        console.error("Firebase read error:", error);
-      });
-    } catch (error) {
-      tag.textContent = "● FIREBASE GREŠKA";
-      console.error(error);
-    }
-  </script>
+// ====== PROGNOZA (ESP32 je preuzme s Open-Meteo i spremi u Firebase) ======
+function cond(c){
+ if(c===0)return["Vedro","sun"];if(c===1)return["Pretežno sunčano","sun"];if(c===2)return["Djelomično oblačno","cloud-sun"];
+ if(c===3)return["Oblačno","cloud"];if(c===45||c===48)return["Magla","fog"];if(c>=51&&c<=57)return["Rosulja","rain"];
+ if(c>=61&&c<=67)return["Kiša","rain"];if(c>=71&&c<=77)return["Snijeg","snow"];if(c>=80&&c<=82)return["Pljuskovi","rain"];
+ if(c>=85&&c<=86)return["Snježni pljuskovi","snow"];if(c>=95)return["Grmljavina","storm"];return["Promjenjivo","cloud"];
+}
+const dir=d=>["S","SI","I","JI","J","JZ","Z","SZ"][Math.round(((d%360)+360)%360/45)%8];
+function renderForecast(){
+ const f=state.forecast;if(!f||typeof f!=="object")return;
+ const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Europe/Zagreb"});
+ const days=["today","tomorrow","dayAfter"].map(k=>f[k]).filter(d=>d&&num(d.max)!==null&&String(d.date||"")>=today);
+ if(!days.length)return;
+ $("fc").innerHTML=days.map(d=>{
+  const diff=Math.round((new Date(d.date+"T12:00:00")-new Date(today+"T12:00:00"))/864e5);
+  const name=["Danas","Sutra","Prekosutra"][diff]||new Date(d.date+"T12:00:00").toLocaleDateString("hr-HR",{weekday:"long"});
+  const[desc,ic]=cond(num(d.code)),dt=new Date(d.date+"T12:00:00").toLocaleDateString("hr-HR",{day:"numeric",month:"numeric"});
+  return`<article class="fc"><div class="dn">${name}<span>${dt}.</span></div>
+  <div class="fb"><div class="fi">${ico(ic,84)}</div><div><div class="mx">${num(d.max).toFixed(1)} °C</div><div class="mn">${num(d.min)!==null?num(d.min).toFixed(1):"--"} °C</div></div></div>
+  <div class="ds">${desc}</div>
+  <div class="ff"><div>${ico("umbrella",20)}Kiša <strong>${num(d.rain)??0}%</strong></div><div>${ico("wind",20)}<strong>${Math.round(num(d.wind)||0)} km/h (${dir(num(d.direction)||0)})</strong></div></div></article>`}).join("");
+}
+startStream();poll();setInterval(poll,30000);
+</script>
 </body>
 </html>
